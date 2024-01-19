@@ -9,6 +9,7 @@ zd=dz
 yq=qy
 yw=wy
 yd=dy
+#这是一条注释
 1q=q1
 1w=w1
 1d=d1

@@ -22,7 +22,14 @@ public class Main {
 
         //read in the program body
         while (program.hasNextLine()){
-            programBody.add(program.nextLine());
+            String line = program.nextLine();
+            if (line.contains("#")){
+                int ignoreIndex = line.indexOf("#");
+                if (ignoreIndex==0) continue;
+                else line = line.substring(0,ignoreIndex);
+                if (!line.contains("=")) continue;
+            }
+            programBody.add(line);
         }
         if (isIllegalProgram()){
             System.out.println("Line "+illegalProgramLine+": Illegal statement found.");
@@ -38,21 +45,24 @@ public class Main {
         System.out.print("Program Initialization done.\n" +
                 "Input your test case below(1 line):");
 
-        //read in the input
-        String inputString = input.nextLine();
-        mainString= inputString;
-        if (isIllegalInput(mainString)){
-            System.out.println("Line Input: Illegal statement found.");
-            return;
+        while (true) {
+            //read in the input
+            String inputString = input.nextLine();
+            if (inputString.equals("exit")) return;
+            mainString = inputString;
+            if (isIllegalInput(mainString)) {
+                System.out.println("Line Input: Illegal statement found.");
+                return;
+            }
+            System.out.println("\nInput: " + inputString);
+
+            //execute the program
+            do {
+                A_equals_B();
+            } while (!isEnd);
+
+            System.out.println("Output: " + mainString);
         }
-        System.out.println("\nInput: "+ inputString);
-
-        //execute the program
-        do {
-            A_equals_B();
-        } while (!isEnd);
-
-        System.out.println("Output: "+mainString);
     }
     private static void printProgram(){
         for (var i:programBody) System.out.println(i);
