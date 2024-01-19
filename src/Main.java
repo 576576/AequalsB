@@ -9,6 +9,7 @@ public class Main {
     private static String mainString;
     private static boolean isEnd;
     private static int programLines = 0;
+    private static int executedLines;
     private static int programLineNow;
     private static final ArrayList<String> matchStrings = new ArrayList<>();
     private static final ArrayList<String> replaceToStrings = new ArrayList<>();
@@ -49,8 +50,10 @@ public class Main {
         System.out.println("Program Initialization done.");
 
         while (true) {
+            //initialize the execute block
             programLineNow = 0;
             isEnd=false;
+            executedLines=0;
             //read in the input
             System.out.print("\nType input below: ");
             String inputString = input.nextLine();
@@ -69,9 +72,9 @@ public class Main {
         }
     }
     private static void printProgram(){
-        for (var i:programBody) System.out.println(i);
+        for (int i = 0; i < programBody.size(); i++) System.out.printf("%-2d %s\n", i + 1, programBody.get(i));
     }
-    private static void A_equals_B(){
+    protected static void A_equals_B(){
         if (programLineNow>=programLines) {
             isEnd=true;
             return;
@@ -79,8 +82,9 @@ public class Main {
         String regex = matchStrings.get(programLineNow);
         String stringReplaceTo = replaceToStrings.get(programLineNow);
         if (mainString.contains(regex)){
-            mainString = mainString.replaceAll(regex,stringReplaceTo);
-            if (isDetailedDisplay) System.out.println(mainString);
+            mainString = mainString.replaceFirst(regex,stringReplaceTo);
+            executedLines++;
+            if (isDetailedDisplay) System.out.printf("%-2d %-2d %s  %s\n",executedLines,programLineNow,programBody.get(programLineNow),mainString);
             programLineNow=0;
         }
         else programLineNow++;
