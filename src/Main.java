@@ -4,11 +4,12 @@ import java.util.Scanner;
 
 public class Main {
     private static int illegalProgramLine = 0;
+    private static boolean isDetailedDisplay = false;
     private static final ArrayList<String> programBody = new ArrayList<>();
     private static String mainString;
-    private static boolean isEnd=false;
+    private static boolean isEnd;
     private static int programLines = 0;
-    private static int programLineNow = 0;
+    private static int programLineNow;
     private static final ArrayList<String> matchStrings = new ArrayList<>();
     private static final ArrayList<String> replaceToStrings = new ArrayList<>();
     public static void main(String[] args) {
@@ -19,6 +20,9 @@ public class Main {
             program = new Scanner("a=b");
         }
         Scanner input = new Scanner(System.in);
+        System.out.print("Do you need detailed information?(y/n): ");
+        var tmp = input.nextLine().toLowerCase().charAt(0);
+        if (tmp=='y') isDetailedDisplay=true;
 
         //read in the program body
         while (program.hasNextLine()){
@@ -41,13 +45,16 @@ public class Main {
             matchStrings.add(i.indexOf("=")!=0?m[0]:"");
             replaceToStrings.add(i.lastIndexOf("=")!=i.length()-1?m[1]:"");
         }
-        printProgram();
-        System.out.print("Program Initialization done.\n" +
-                "Input your test case below(1 line):");
+        if (isDetailedDisplay) printProgram();
+        System.out.println("Program Initialization done.");
 
         while (true) {
+            programLineNow = 0;
+            isEnd=false;
             //read in the input
+            System.out.print("\nType input below: ");
             String inputString = input.nextLine();
+            if (inputString.isEmpty()) continue;
             if (inputString.equals("exit")) return;
             mainString = inputString;
             if (isIllegalInput(mainString)) {
@@ -57,10 +64,7 @@ public class Main {
             System.out.println("\nInput: " + inputString);
 
             //execute the program
-            do {
-                A_equals_B();
-            } while (!isEnd);
-
+            do A_equals_B(); while (!isEnd);
             System.out.println("Output: " + mainString);
         }
     }
@@ -76,6 +80,7 @@ public class Main {
         String stringReplaceTo = replaceToStrings.get(programLineNow);
         if (mainString.contains(regex)){
             mainString = mainString.replaceAll(regex,stringReplaceTo);
+            if (isDetailedDisplay) System.out.println(mainString);
             programLineNow=0;
         }
         else programLineNow++;
