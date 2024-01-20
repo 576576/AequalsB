@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -6,24 +7,38 @@ import java.util.Scanner;
 public class Main {
     private static boolean isDetailedDisplay = false;
     private static String mainString;
-    private static int timeLimit = 20;
+    private static int timeLimit = 1000;
     private static boolean isEnd;
     private static boolean isToReloadProgram = true;
+    private static boolean isTestCase = false;
     private static int programLines = 0;
     private static int executedLines;
     private static int programLineNow;
     private static HashSet<Integer> ignoredLineSet;
+    private static ArrayList<String> testcaseMap;
     private static ArrayList<String> matchStrings;
     private static ArrayList<String> replaceToStrings;
+    private static int testcaseNow = 0;
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
         System.out.print("Do you need detailed information?(y/n): ");
-        var tmp = input.nextLine().toLowerCase().charAt(0);
-        if (tmp=='y') isDetailedDisplay=true;
+        var tmp = input.nextLine().toLowerCase();
+        if (tmp.contains("y")) isDetailedDisplay=true;
         System.out.print("Input time limit(Positive integer): ");
         try {
             timeLimit = Integer.parseInt(input.nextLine());
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid time limit: reset to 1000");
+        }
+        System.out.print("Use testcases?(y/n): ");
+        tmp = input.nextLine().toLowerCase();
+        if (tmp.contains("y")) {
+            isTestCase=true;
+            if (!readTestCase()){
+                System.err.println("Error: testcase not found.");
+                return;
+            }
+        }
 
         while (true) {
             ignoredLineSet = new HashSet<>();
@@ -31,9 +46,10 @@ public class Main {
                 //read in the program body
                 Scanner program;
                 try {
-                    program = new Scanner(new File("programBody.txt"));
+                    program = new Scanner(new File("code.txt"));
                 } catch (Exception e) {
-                    program = new Scanner("a=b");
+                    System.err.println("Error: code not found.");
+                    return;
                 }
                 matchStrings = new ArrayList<>();
                 replaceToStrings = new ArrayList<>();
@@ -64,6 +80,7 @@ public class Main {
                         return;
                     }
                 }
+                program.close();
                 programLines=matchStrings.size();
                 if (isDetailedDisplay) printProgram();
                 System.out.println("Program Initialization done.");
@@ -75,8 +92,22 @@ public class Main {
             isEnd=false;
             executedLines=0;
             //read in the input
-            System.out.print("\nType input below: ");
-            String inputString = input.nextLine();
+            String inputString;
+            String expectedResult;
+            if (isTestCase) {
+                try {
+                    inputString = testcaseMap.get(testcaseNow*2);
+                    expectedResult = testcaseMap.get(testcaseNow*2+1);
+                    testcaseNow++;
+                } catch (Exception e) {
+                    return;
+                }
+            }
+            else {
+                System.out.print("\nType input below: ");
+                inputString = input.nextLine();
+                expectedResult = "";
+            }
             if (inputString.isEmpty()) continue;
             if (inputString.equals("exit")) return;
             if (inputString.equals("reload")) {
@@ -88,11 +119,22 @@ public class Main {
                 System.err.println("Line Input: Illegal statement found.");
                 isEnd=true;
             }
-            System.out.println("\nInput: " + inputString);
 
             //execute the program
+            System.out.println();
             while (!isEnd) A_equals_B();
+            if (isTestCase) System.out.println("Testcase "+testcaseNow);
+            System.out.println("\nInput: " + inputString);
+            if (isTestCase) System.out.println("Expected: " + expectedResult);
             System.out.println("Output: " + mainString);
+            if (isTestCase) {
+                boolean isValidOutput = mainString.equals(expectedResult);
+                if (isValidOutput) System.out.println("Pass.");
+                else {
+                    System.err.println("Wrong Answer at case "+testcaseNow);
+                    return;
+                }
+            }
         }
     }
     private static void printProgram(){
@@ -164,6 +206,18 @@ public class Main {
     private static String removeKey(String regex){
         if (!regex.contains("(")) return regex;
         return regex.substring(regex.indexOf(")")+1).trim();
+    }
+    private static boolean readTestCase(){
+        testcaseMap = new ArrayList<>();
+        try {
+            Scanner sc = new Scanner(new File("testcase.txt"));
+            while (sc.hasNextLine()){
+                testcaseMap.add(sc.nextLine());
+            }
+            return true;
+        } catch (FileNotFoundException e) {
+            return false;
+        }
     }
     private static boolean isIllegalProgramLine(String line){
         return !line.contains("=") || line.indexOf("=") != line.lastIndexOf("=");
