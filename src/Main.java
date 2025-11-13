@@ -10,7 +10,7 @@ public class Main {
     private static int timeLimit = 1000;
     private static boolean isEnd;
     private static boolean isToReloadProgram = true;
-    private static int programLines = 0;
+    private static int programLines;
     private static int executedLines;
     private static int programLineNow;
     private static HashSet<Integer> ignoredLineSet;
@@ -18,7 +18,7 @@ public class Main {
     private static ArrayList<String> matchStrings;
     private static ArrayList<String> replaceToStrings;
     private static int testcaseNow = 0;
-    private static boolean isUsingFileIO;
+    private static boolean isUsingFileCases;
     private static String outPath = "";
     private static boolean isCliInput;
 
@@ -40,7 +40,7 @@ public class Main {
             CommandLine cmd = parser.parse(options, args);
             isCliInput = cmd.hasOption("c");
             isDetailedDisplay = cmd.hasOption("d");
-            isUsingFileIO = cmd.hasOption("f");
+            isUsingFileCases = cmd.hasOption("f");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
             if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
             if (cmd.hasOption("t")) timeLimit = Integer.parseInt(cmd.getOptionValue("t"));
@@ -59,12 +59,12 @@ public class Main {
             isDetailedDisplay = IO.readln("Need detail infos?(y/n): ").contains("y");
 
             var input = IO.readln("Time limit: ");
-            if (isNumeric(input)) timeLimit = Integer.parseInt(input);
+            if (Utils.isNumeric(input)) timeLimit = Integer.parseInt(input);
             IO.println("Using time limit: " + timeLimit);
 
-            isUsingFileIO = IO.readln("Use testcase?(y/n): ").contains("y");
+            isUsingFileCases = IO.readln("Use testcase?(y/n): ").contains("y");
         }
-        if (isUsingFileIO) {
+        if (isUsingFileCases) {
             String ioPath = filePath.replace(".txt", "_io.txt");
             var ioFile = Utils.readFile(ioPath);
             testcaseMap.addAll(List.of(ioFile.split("\n")));
@@ -72,13 +72,13 @@ public class Main {
 
         IO.println("Read file: " + filePath);
 
-        convertCodeBlock(filePath);
+        executeCodeBlock(filePath);
     }
 
     /**
      * 接受并处理全部代码块
      */
-    static void convertCodeBlock(String filePath) {
+    static void executeCodeBlock(String filePath) {
         while (true) {
             ignoredLineSet = new HashSet<>();
 
@@ -87,17 +87,13 @@ public class Main {
                 String codeBlock = Utils.readFile(filePath);
                 matchStrings = new ArrayList<>();
                 replaceToStrings = new ArrayList<>();
-                programLineNow = 0;
                 programLines = 0;
-                for (String line : codeBlock.split("\n")) {
-                    if (line.isEmpty()) continue;
-                    if (line.contains("#")) {
-                        int ignoreIndex = line.indexOf("#");
-                        if (ignoreIndex == 0) continue;
-                        else line = line.substring(0, ignoreIndex);
-                    }
-                    programLineNow++;
-                    if (isIllegalProgramLine(line)) {
+                ArrayList<String> codeLines = new ArrayList<>(List.of(codeBlock.split("\n")));
+                ArrayList<String> lines = removeComment(codeLines);
+                for (int i = 0; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    programLineNow = i + 1;
+                    if (Utils.isIllegalProgramLine(line)) {
                         System.err.println("Illegal statement found at line " + programLineNow);
                         System.out.printf("%-2d %s", programLineNow, line);
                         return;
@@ -109,7 +105,7 @@ public class Main {
                     matchStrings.add(matchString);
                     replaceToStrings.add(replaceToString);
 
-                    if (isIllegalProgramLine(matchString, replaceToString)) {
+                    if (Utils.isIllegalProgramLine(matchString, replaceToString)) {
                         IO.println("Line " + programLineNow + ": Illegal statement found.");
                         System.err.printf("%-2d %s\n", programLineNow, line);
                         return;
@@ -128,7 +124,7 @@ public class Main {
             //read in the input
             String inputString;
             String expectedResult;
-            if (isUsingFileIO) {
+            if (isUsingFileCases) {
                 try {
                     inputString = testcaseMap.get(testcaseNow * 2);
                     expectedResult = testcaseMap.get(testcaseNow * 2 + 1);
@@ -157,17 +153,17 @@ public class Main {
                 }
             }
             mainString = inputString;
-            if (isIllegalInput(mainString)) {
+            if (Utils.isIllegalInput(mainString)) {
                 System.err.println("Line Input: Illegal statement found.");
                 isEnd = true;
             }
 
             //execute the program
             IO.println();
-            while (!isEnd) A_equals_B();
-            if (isUsingFileIO) IO.println("\nTestcase " + testcaseNow + " >>>");
+            while (!isEnd) executeCodeLine();
+            if (isUsingFileCases) IO.println("\nTestcase " + testcaseNow + " >>>");
             IO.println("Input:\t" + inputString + "\nOutput:\t" + mainString);
-            if (isUsingFileIO) {
+            if (isUsingFileCases) {
                 IO.println("OutStd:\t" + expectedResult);
                 if (mainString.equals(expectedResult)) IO.println("Pass.");
                 else {
@@ -178,11 +174,7 @@ public class Main {
         }
     }
 
-    private static void printProgramDetail() {
-        for (int i = 0; i < matchStrings.size(); i++) System.out.printf("%-2d %s\n", i + 1, getProgramBody(i));
-    }
-
-    private static void A_equals_B() {
+    private static void executeCodeLine() {
         if (programLineNow >= programLines) {
             isEnd = true;
             return;
@@ -194,11 +186,11 @@ public class Main {
         }
         String stringMatchTo = matchStrings.get(programLineNow);
         String stringReplaceTo = replaceToStrings.get(programLineNow);
-        String regex = removeKey(stringMatchTo);
-        String target = removeKey(stringReplaceTo);
+        String regex = Utils.removeKey(stringMatchTo);
+        String target = Utils.removeKey(stringReplaceTo);
         if (mainString.contains(regex)) {
-            var key1 = keyOf(stringMatchTo);
-            var key2 = keyOf(stringReplaceTo);
+            var key1 = Utils.keyOf(stringMatchTo);
+            var key2 = Utils.keyOf(stringReplaceTo);
             if (key1 == null || key1.equals("once")) {
                 if (ignoredLineSet.contains(programLineNow)) {
                     programLineNow++;
@@ -231,6 +223,25 @@ public class Main {
         } else programLineNow++;
     }
 
+    static ArrayList<String> removeComment(ArrayList<String> codeLines) {
+        for (int i = 0; i < codeLines.size(); i++) {
+            var line = codeLines.get(i);
+            if (line.isEmpty()) {
+                codeLines.remove(i);
+                i--;
+            }
+            if (line.contains("#")) {
+                int ignoreIndex = line.indexOf("#");
+                if (ignoreIndex != 0) codeLines.set(i, line.substring(0, ignoreIndex));
+                else {
+                    codeLines.remove(i);
+                    i--;
+                }
+            }
+        }
+        return codeLines;
+    }
+
     private static void doEqual(String key2, String regex, String target) {
         switch (key2) {
             case "start" -> mainString = target + mainString.replaceFirst(regex, "");
@@ -242,53 +253,12 @@ public class Main {
         }
     }
 
-    private static String keyOf(String regex) {
-        if (!regex.contains("(")) return null;
-        return regex.substring(regex.indexOf("(") + 1, regex.indexOf(")"));
-    }
-
-    private static String removeKey(String regex) {
-        if (!regex.contains("(")) return regex;
-        return regex.substring(regex.indexOf(")") + 1).trim();
-    }
-
-    private static boolean isIllegalProgramLine(String line) {
-        return !line.contains("=") || line.indexOf("=") != line.lastIndexOf("=");
-    }
-
-    private static boolean isIllegalProgramLine(String matchString, String replaceToString) {
-        return isIllegalStatement(matchString, "start", "end", "once") ||
-                isIllegalStatement(replaceToString, "start", "end", "return");
-    }
-
-    private static boolean isIllegalStatement(String statement, String... allowedKeys) {
-        if (statement.contains("(")) {
-            int keyStart = statement.indexOf("(");
-            int keyEnd = Utils.getEndBracket(statement, keyStart);
-
-            if (keyStart == 0 && keyEnd != -1) {
-                String key = statement.substring(keyStart + 1, keyEnd).toLowerCase();
-                for (var i : allowedKeys) if (key.equals(i)) return false;
-            }
-            return true;
-        } else return statement.contains(")");
+    private static void printProgramDetail() {
+        for (int i = 0; i < matchStrings.size(); i++) System.out.printf("%-2d %s\n", i + 1, getProgramBody(i));
     }
 
     private static String getProgramBody(int line) {
         return String.format("%s=%s", matchStrings.get(line), replaceToStrings.get(line));
     }
 
-    private static boolean isIllegalInput(String mainString) {
-        return !mainString.contains("#") && mainString.contains("=") || mainString.contains("(") || mainString.contains(
-                ")");
-    }
-
-    public static boolean isNumeric(String str) {
-        try {
-            Integer.parseInt(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
 }

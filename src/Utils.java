@@ -42,4 +42,50 @@ public class Utils {
         }
         return -1; // No matching closing bracket found
     }
+
+    static String keyOf(String regex) {
+        if (!regex.contains("(")) return null;
+        return regex.substring(regex.indexOf("(") + 1, regex.indexOf(")"));
+    }
+
+    static String removeKey(String regex) {
+        if (!regex.contains("(")) return regex;
+        return regex.substring(regex.indexOf(")") + 1).trim();
+    }
+
+    static boolean isIllegalProgramLine(String line) {
+        return !line.contains("=") || line.indexOf("=") != line.lastIndexOf("=");
+    }
+
+    static boolean isIllegalProgramLine(String matchString, String replaceToString) {
+        return isIllegalStatement(matchString, "start", "end", "once") ||
+                isIllegalStatement(replaceToString, "start", "end", "return");
+    }
+
+    private static boolean isIllegalStatement(String statement, String... allowedKeys) {
+        if (statement.contains("(")) {
+            int keyStart = statement.indexOf("(");
+            int keyEnd = getEndBracket(statement, keyStart);
+
+            if (keyStart == 0 && keyEnd != -1) {
+                String key = statement.substring(keyStart + 1, keyEnd).toLowerCase();
+                for (var i : allowedKeys) if (key.equals(i)) return false;
+            }
+            return true;
+        } else return statement.contains(")");
+    }
+
+    static boolean isIllegalInput(String mainString) {
+        return !mainString.contains("#") && mainString.contains("=") || mainString.contains("(") || mainString.contains(
+                ")");
+    }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 }
