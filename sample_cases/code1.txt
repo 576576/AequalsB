@@ -1,3 +1,2 @@
-c=
 b=a
 aaaa=(return)hello world

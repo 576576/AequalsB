@@ -1,5 +1,6 @@
-# A = B -> a Java interpreter 
-了解到esolang游戏A=B后，我萌生了用Java试着写一个其解释器的想法，这就是本仓库A=B的由来。
+# A=B  Java interpreter 
+
+esolang `A=B`后，我萌生了用Java试着写一个其解释器的想法，这就是本仓库A=B的由来。
 本项目实现了A=B的拓展指令集，包括：
 - string1=string2 将string1替换为string2
 - 关键字 once start end return
