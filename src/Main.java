@@ -1,10 +1,8 @@
 import org.apache.commons.cli.*;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Scanner;
+import java.util.List;
 
 public class Main {
     private static boolean isDetailedDisplay = false;
@@ -16,13 +14,12 @@ public class Main {
     private static int executedLines;
     private static int programLineNow;
     private static HashSet<Integer> ignoredLineSet;
-    private static ArrayList<String> testcaseMap;
+    private static final ArrayList<String> testcaseMap = new ArrayList<>();
     private static ArrayList<String> matchStrings;
     private static ArrayList<String> replaceToStrings;
     private static int testcaseNow = 0;
     private static boolean isUsingFileIO;
     private static String outPath = "";
-    private static String ioPath = "sample_cases/code1_io.txt";
     private static boolean isCliInput;
 
     static void main(String[] args) {
@@ -31,9 +28,9 @@ public class Main {
 //        if (args.length != 0) filePath = args[0];
 
         Options options = new Options();
-        options.addOption("c", "cli", false, "无参数运行(将在命令行请求)");
+        options.addOption("c", "cli", false, "忽略参数运行(将在命令行请求)");
         options.addOption("d", "detail", false, "需要详细输出");
-        options.addOption("io", "using-file-io", false, "使用文件输入");
+        options.addOption("f", "using-file-io", false, "使用文件输入");
         options.addOption("i", "file", true, "指定文件路径");
         options.addOption("o", "output", true, "指定输出路径");
         options.addOption("t", "time", true, "最大执行行数");
@@ -43,7 +40,7 @@ public class Main {
             CommandLine cmd = parser.parse(options, args);
             isCliInput = cmd.hasOption("c");
             isDetailedDisplay = cmd.hasOption("d");
-            isUsingFileIO = cmd.hasOption("io");
+            isUsingFileIO = cmd.hasOption("f");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
             if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
             if (cmd.hasOption("t")) timeLimit = Integer.parseInt(cmd.getOptionValue("t"));
@@ -66,10 +63,11 @@ public class Main {
             IO.println("Using time limit: " + timeLimit);
 
             isUsingFileIO = IO.readln("Use testcase?(y/n): ").contains("y");
-            if (isUsingFileIO && !readTestCase()) {
-                System.err.println("Error: testcase not found.");
-                return;
-            }
+        }
+        if (isUsingFileIO) {
+            String ioPath = filePath.replace(".txt", "_io.txt");
+            var ioFile = Utils.readFile(ioPath);
+            testcaseMap.addAll(List.of(ioFile.split("\n")));
         }
 
         IO.println("Read file: " + filePath);
@@ -167,15 +165,13 @@ public class Main {
             //execute the program
             IO.println();
             while (!isEnd) A_equals_B();
-            if (isUsingFileIO) IO.println("Testcase " + testcaseNow);
-            IO.println("\nInput: " + inputString);
-            if (isUsingFileIO) IO.println("Expected: " + expectedResult);
-            IO.println("Output: " + mainString);
+            if (isUsingFileIO) IO.println("\nTestcase " + testcaseNow + " >>>");
+            IO.println("Input:\t" + inputString + "\nOutput:\t" + mainString);
             if (isUsingFileIO) {
-                boolean isValidOutput = mainString.equals(expectedResult);
-                if (isValidOutput) IO.println("Pass.");
+                IO.println("OutStd:\t" + expectedResult);
+                if (mainString.equals(expectedResult)) IO.println("Pass.");
                 else {
-                    System.err.println("Wrong Answer at case " + testcaseNow);
+                    System.err.println("Fail at case " + testcaseNow);
                     return;
                 }
             }
@@ -254,19 +250,6 @@ public class Main {
     private static String removeKey(String regex) {
         if (!regex.contains("(")) return regex;
         return regex.substring(regex.indexOf(")") + 1).trim();
-    }
-
-    private static boolean readTestCase() {
-        testcaseMap = new ArrayList<>();
-        try {
-            Scanner sc = new Scanner(new File(ioPath));
-            while (sc.hasNextLine()) {
-                testcaseMap.add(sc.nextLine());
-            }
-            return true;
-        } catch (FileNotFoundException e) {
-            return false;
-        }
     }
 
     private static boolean isIllegalProgramLine(String line) {
