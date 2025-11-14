@@ -1,0 +1,46 @@
+Program Loaded> sample_cases/code1.txt
+1  vvv=
+2  666666=(return)sayonara
+3  b=a
+4  aaaa=(return)hello world
+5  =666
+
+Testcase 1
+Input> aaabbababa
+1  3  b=a	aaaabababa
+2  3  b=a	aaaaaababa
+3  3  b=a	aaaaaaaaba
+4  3  b=a	aaaaaaaaaa
+5  4  aaaa=(return)hello world	hello world
+
+Testcase 2
+Input> aba
+1  3  b=a	aaa
+2  5  =666	666aaa
+3  5  =666	666666aaa
+4  2  666666=(return)sayonara	sayonara
+
+Testcase 3
+Input> abandon
+1  3  b=a	aaandon
+2  5  =666	666aaandon
+3  5  =666	666666aaandon
+4  2  666666=(return)sayonara	sayonara
+
+Testcase 4
+Input> aaaa
+1  4  aaaa=(return)hello world	hello world
+
+Testcase 5
+Input> vvv
+1  1  vvv=	
+2  5  =666	666
+3  5  =666	666666
+4  2  666666=(return)sayonara	sayonara
+
+Testcase 6
+Input> vv6
+1  5  =666	666vv6
+2  5  =666	666666vv6
+3  2  666666=(return)sayonara	sayonara
+Case failed.

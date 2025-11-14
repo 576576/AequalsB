@@ -1,3 +1,6 @@
 # 示例程序 b=a
+vvv=
+666666=(return)sayonara
 b=a
 aaaa=(return)hello world
+=666

@@ -43,12 +43,12 @@ public class Utils {
         return -1; // No matching closing bracket found
     }
 
-    static String keyOf(String regex) {
+    static String getKey(String regex) {
         if (!regex.contains("(")) return null;
         return regex.substring(regex.indexOf("(") + 1, regex.indexOf(")"));
     }
 
-    static String removeKey(String regex) {
+    static String trimKey(String regex) {
         if (!regex.contains("(")) return regex;
         return regex.substring(regex.indexOf(")") + 1).trim();
     }

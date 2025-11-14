@@ -1,31 +1,31 @@
 import org.apache.commons.cli.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 
 public class Main {
+    private static final ArrayList<String> testcaseMap = new ArrayList<>();
     private static boolean isDetailedDisplay = false;
     private static String mainString;
     private static int timeLimit = 1000;
     private static boolean isEnd;
-    private static boolean isToReloadProgram = true;
+    private static boolean isToReload = true;
     private static int programLines;
     private static int executedLines;
-    private static int programLineNow;
+    private static int lineIndex;
     private static HashSet<Integer> ignoredLineSet;
-    private static final ArrayList<String> testcaseMap = new ArrayList<>();
-    private static ArrayList<String> matchStrings;
-    private static ArrayList<String> replaceToStrings;
+    private static ArrayList<String> leftExprs;
+    private static ArrayList<String> rightExprs;
+    private static String runHistory = "", runHistoryTemp = "";
     private static int testcaseNow = 0;
     private static boolean isUsingFileCases;
-    private static String outPath = "";
-    private static boolean isCliInput;
+    private static boolean isCliInput, isLogOutput;
 
     static void main(String[] args) {
-        String filePath = "sample_cases/code1.txt";
+        String filePath = "sample_cases/code1.txt", outPath = "";
 
-//        if (args.length != 0) filePath = args[0];
+        if (args.length != 0 && args[0].endsWith(".txt")) filePath = args[0];
 
         Options options = new Options();
         options.addOption("c", "cli", false, "忽略参数运行(将在命令行请求)");
@@ -41,6 +41,7 @@ public class Main {
             isCliInput = cmd.hasOption("c");
             isDetailedDisplay = cmd.hasOption("d");
             isUsingFileCases = cmd.hasOption("f");
+            isLogOutput = cmd.hasOption("o");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
             if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
             if (cmd.hasOption("t")) timeLimit = Integer.parseInt(cmd.getOptionValue("t"));
@@ -54,6 +55,8 @@ public class Main {
             IO.println("\u001B[31mNo input file is detected.\u001B[0m");
             return;
         }
+        if (outPath.isEmpty())
+            outPath = filePath.replace(".txt", ".log");
 
         if (isCliInput) {
             isDetailedDisplay = IO.readln("Need detail infos?(y/n): ").contains("y");
@@ -73,6 +76,11 @@ public class Main {
         IO.println("Read file: " + filePath);
 
         executeCodeBlock(filePath);
+
+        if (isLogOutput) {
+            Utils.writeFile(outPath, runHistory);
+            IO.println("\n\nLog output at:\n> " + outPath);
+        }
     }
 
     /**
@@ -82,73 +90,74 @@ public class Main {
         while (true) {
             ignoredLineSet = new HashSet<>();
 
-            //软重载
-            if (isToReloadProgram) {
-                String codeBlock = Utils.readFile(filePath);
-                matchStrings = new ArrayList<>();
-                replaceToStrings = new ArrayList<>();
+            if (isToReload) {
+                leftExprs = new ArrayList<>();
+                rightExprs = new ArrayList<>();
                 programLines = 0;
+
+                String codeBlock = Utils.readFile(filePath);
                 ArrayList<String> codeLines = new ArrayList<>(List.of(codeBlock.split("\n")));
                 ArrayList<String> lines = removeComment(codeLines);
+
                 for (int i = 0; i < lines.size(); i++) {
                     String line = lines.get(i);
-                    programLineNow = i + 1;
+                    lineIndex = i + 1;
                     if (Utils.isIllegalProgramLine(line)) {
-                        System.err.println("Illegal statement found at line " + programLineNow);
-                        System.out.printf("%-2d %s", programLineNow, line);
+                        System.err.println("Illegal statement found at line " + lineIndex);
+                        System.err.printf("%-2d %s", lineIndex, line);
                         return;
                     }
-                    String[] m = line.split("=", 2);
                     int splitIndex = line.indexOf('=');
-                    var matchString = (splitIndex != 0 ? m[0] : "").trim();
-                    var replaceToString = (splitIndex != line.length() - 1 ? m[1] : "").trim();
-                    matchStrings.add(matchString);
-                    replaceToStrings.add(replaceToString);
+                    String leftExpr = line.substring(0, splitIndex);
+                    String rightExpr = line.substring(splitIndex + 1);
+                    leftExprs.add(leftExpr);
+                    rightExprs.add(rightExpr);
 
-                    if (Utils.isIllegalProgramLine(matchString, replaceToString)) {
-                        IO.println("Line " + programLineNow + ": Illegal statement found.");
-                        System.err.printf("%-2d %s\n", programLineNow, line);
+                    if (Utils.isIllegalProgramLine(leftExpr, rightExpr)) {
+                        IO.println("Line " + lineIndex + ": Illegal statement found.");
+                        System.err.printf("%-2d %s\n", lineIndex, line);
                         return;
                     }
                 }
-                programLines = matchStrings.size();
-                if (isDetailedDisplay) printProgramDetail();
-                IO.println("Program Initialization done.");
-                isToReloadProgram = false;
+                programLines = leftExprs.size();
+                String codeFormatted = getCodeFormatted();
+                runHistory += "Program Loaded> " + filePath + "\n" + codeFormatted;
+                if (isDetailedDisplay) IO.println(codeFormatted);
+                IO.println("Program Loaded.");
+                isToReload = false;
             }
 
             //initialize the execute block
-            programLineNow = 0;
+            lineIndex = 0;
             isEnd = false;
             executedLines = 0;
-            //read in the input
-            String inputString;
-            String expectedResult;
+            runHistoryTemp = "";
+
+            String inputString, expectedResult;
             if (isUsingFileCases) {
                 try {
                     inputString = testcaseMap.get(testcaseNow * 2);
                     expectedResult = testcaseMap.get(testcaseNow * 2 + 1);
                     testcaseNow++;
+                    runHistory += "\nTestcase " + testcaseNow + "\nInput> " + inputString + "\n";
                 } catch (Exception e) {
                     return;
                 }
             } else {
                 inputString = IO.readln("\nType input below: ");
                 expectedResult = "";
+                runHistory += "\nInput> " + inputString + "\n";
             }
+
             switch (inputString) {
                 case "" -> {
                     continue;
                 }
                 case "exit" -> {
-                    if (!outPath.isEmpty()) {
-                        Utils.writeFile(outPath, ""); //todo: write the program & io flow to file.
-                        IO.println("Output execute log at\n> " + outPath);
-                    }
                     return;
                 }
                 case "reload" -> {
-                    isToReloadProgram = true;
+                    isToReload = true;
                     continue;
                 }
             }
@@ -161,21 +170,25 @@ public class Main {
             //execute the program
             IO.println();
             while (!isEnd) executeCodeLine();
+            runHistory += runHistoryTemp;
+
             if (isUsingFileCases) IO.println("\nTestcase " + testcaseNow + " >>>");
             IO.println("Input:\t" + inputString + "\nOutput:\t" + mainString);
             if (isUsingFileCases) {
                 IO.println("OutStd:\t" + expectedResult);
-                if (mainString.equals(expectedResult)) IO.println("Pass.");
-                else {
+                if (!mainString.equals(expectedResult)) {
+                    runHistory += "Case failed.\n";
                     System.err.println("Fail at case " + testcaseNow);
-                    return;
                 }
+            }
+            if (isDetailedDisplay) {
+                IO.print("Running log >>>\n" + runHistoryTemp.trim());
             }
         }
     }
 
     private static void executeCodeLine() {
-        if (programLineNow >= programLines) {
+        if (lineIndex >= programLines) {
             isEnd = true;
             return;
         }
@@ -184,43 +197,43 @@ public class Main {
             isEnd = true;
             return;
         }
-        String stringMatchTo = matchStrings.get(programLineNow);
-        String stringReplaceTo = replaceToStrings.get(programLineNow);
-        String regex = Utils.removeKey(stringMatchTo);
-        String target = Utils.removeKey(stringReplaceTo);
+        String leftExpr = leftExprs.get(lineIndex);
+        String rightExpr = rightExprs.get(lineIndex);
+        String regex = Utils.trimKey(leftExpr);
+        String target = Utils.trimKey(rightExpr);
         if (mainString.contains(regex)) {
-            var key1 = Utils.keyOf(stringMatchTo);
-            var key2 = Utils.keyOf(stringReplaceTo);
+            String key1 = Utils.getKey(leftExpr), key2 = Utils.getKey(rightExpr);
+
             if (key1 == null || key1.equals("once")) {
-                if (ignoredLineSet.contains(programLineNow)) {
-                    programLineNow++;
+                if (ignoredLineSet.contains(lineIndex)) {
+                    lineIndex++;
                     return;
                 }
-                if (key1 != null) ignoredLineSet.add(programLineNow);
+                if (key1 != null) ignoredLineSet.add(lineIndex);
                 if (key2 == null) mainString = mainString.replaceFirst(regex, target);
-                else doEqual(key2, regex, target);
+                else mainString = doReplace(regex, target, key2, mainString);
             } else if (key1.equals("start") && mainString.indexOf(regex) == 0) {
                 if (key2 == null) mainString = mainString.replaceFirst(regex, target);
                 else {
                     mainString = mainString.replaceFirst(regex, "");
-                    doEqual(key2, regex, target);
+                    mainString = doReplace(regex, target, key2, mainString);
                 }
             } else if (key1.equals("end") && mainString.lastIndexOf(regex) + regex.length() == mainString.length()) {
                 if (key2 == null) mainString = mainString.substring(0, mainString.length() - regex.length()) + target;
                 else {
                     mainString = mainString.substring(0, mainString.length() - regex.length());
-                    doEqual(key2, regex, target);
+                    mainString = doReplace(regex, target, key2, mainString);
                 }
             } else {
-                programLineNow++;
+                lineIndex++;
                 return;
             }
             executedLines++;
-            if (isDetailedDisplay)
-                System.out.printf("%-2d %-2d %s  %s\n", executedLines, programLineNow, getProgramBody(programLineNow),
-                        mainString);
-            programLineNow = 0;
-        } else programLineNow++;
+            runHistoryTemp += String.format("%-2d %-2d %s=%s\t%s\n",
+                    executedLines, lineIndex + 1,
+                    leftExprs.get(lineIndex), rightExprs.get(lineIndex), mainString);
+            lineIndex = 0;
+        } else lineIndex++;
     }
 
     static ArrayList<String> removeComment(ArrayList<String> codeLines) {
@@ -242,23 +255,29 @@ public class Main {
         return codeLines;
     }
 
-    private static void doEqual(String key2, String regex, String target) {
-        switch (key2) {
-            case "start" -> mainString = target + mainString.replaceFirst(regex, "");
-            case "end" -> mainString = mainString.replaceFirst(regex, "") + target;
-            case "return" -> {
-                isEnd = true;
-                mainString = target;
-            }
+    private static String doReplace(String left, String right, String key2, String mainString) {
+        Map<String, Function<String, String>> replaceHandlers = new HashMap<>();
+
+        replaceHandlers.put("", s -> s.replaceFirst(left, right));
+        replaceHandlers.put("start", s -> right + s.replaceFirst(left, ""));
+        replaceHandlers.put("end", s -> s.replaceFirst(left, "") + right);
+        replaceHandlers.put("return", _ -> {
+            isEnd = true;
+            return right;
+        });
+
+        for (Map.Entry<String, Function<String, String>> entry : replaceHandlers.entrySet()) {
+            if (key2.equals(entry.getKey())) return entry.getValue().apply(mainString);
         }
+        return mainString;
     }
 
-    private static void printProgramDetail() {
-        for (int i = 0; i < matchStrings.size(); i++) System.out.printf("%-2d %s\n", i + 1, getProgramBody(i));
-    }
-
-    private static String getProgramBody(int line) {
-        return String.format("%s=%s", matchStrings.get(line), replaceToStrings.get(line));
+    private static String getCodeFormatted() {
+        var ref = new Object() {
+            String bash = "";
+        };
+        IntStream.range(0, leftExprs.size()).forEach(i -> ref.bash += String.format("%-2d %s=%s\n", i + 1, leftExprs.get(i), rightExprs.get(i)));
+        return ref.bash;
     }
 
 }

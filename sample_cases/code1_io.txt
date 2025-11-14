@@ -1,10 +1,12 @@
 aaabbababa
 hello world
 aba
-aaa
+sayonara
 abandon
-aaandon
+sayonara
 aaaa
 hello world
 vvv
-vvv
+sayonara
+vv6
+1145
