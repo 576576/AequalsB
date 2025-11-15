@@ -54,7 +54,8 @@ public class Utils {
     }
 
     static boolean isIllegalProgramLine(String line) {
-        return !line.contains("=") || line.indexOf("=") != line.lastIndexOf("=");
+        int equalIndex = line.indexOf('=');
+        return equalIndex != line.lastIndexOf('=') || equalIndex == -1;
     }
 
     static boolean isIllegalProgramLine(String matchString, String replaceToString) {
@@ -63,6 +64,7 @@ public class Utils {
     }
 
     private static boolean isIllegalStatement(String statement, String... allowedKeys) {
+        statement = statement.trim();
         if (statement.contains("(")) {
             int keyStart = statement.indexOf("(");
             int keyEnd = getEndBracket(statement, keyStart);
@@ -87,5 +89,23 @@ public class Utils {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    static String quote(String codeBlock) {
+        codeBlock = unquote(codeBlock);
+        String s = codeBlock.replace("*", "\\*");
+        return s;
+    }
+
+    static String unquote(String codeBlock) {
+        return codeBlock.replace("\\", "");
+    }
+
+    static void printError(String msg) {
+        IO.println("\u001B[31m" + msg + "\u001B[0m");
+    }
+
+    static void printfError(Object... args) {
+        System.out.printf("\u001B[31m%-2d %s\n\u001B[0m", args);
     }
 }

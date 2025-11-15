@@ -8,5 +8,3 @@ aaaa
 hello world
 vvv
 sayonara
-vv6
-1145

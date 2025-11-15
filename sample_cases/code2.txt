@@ -1,0 +1,19 @@
+# 简单二进制乘法
+(start) * =
+(start) 0 =
+
+appendxy = (end) xy
+
+0dec = dec1
+1dec = 0
+
+** = dec ** xxyy
+* = dec * appendxy
+(once) xy = ** xy
+
+triggerinc = (end)inc
+0 inc = 1
+1 inc = inc 0
+inc = 1
+xxyy xy = xy xxyy triggerinc
+xy =

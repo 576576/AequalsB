@@ -6,10 +6,10 @@ import java.util.stream.IntStream;
 
 public class Main {
     private static final ArrayList<String> testcaseMap = new ArrayList<>();
+    static boolean isEnd;
     private static boolean isDetailedDisplay = false;
     private static String mainString;
     private static int timeLimit = 1000;
-    private static boolean isEnd;
     private static boolean isToReload = true;
     private static int programLines;
     private static int executedLines;
@@ -23,14 +23,14 @@ public class Main {
     private static boolean isCliInput, isLogOutput;
 
     static void main(String[] args) {
-        String filePath = "sample_cases/code1.txt", outPath = "";
+        String filePath = "", outPath = "";
 
         if (args.length != 0 && args[0].endsWith(".txt")) filePath = args[0];
 
         Options options = new Options();
         options.addOption("c", "cli", false, "忽略参数运行(将在命令行请求)");
         options.addOption("d", "detail", false, "需要详细输出");
-        options.addOption("f", "using-file-io", false, "使用文件输入");
+        options.addOption("fio", "using-file-io", false, "使用文件输入");
         options.addOption("i", "file", true, "指定文件路径");
         options.addOption("o", "output", true, "指定输出路径");
         options.addOption("t", "time", true, "最大执行行数");
@@ -40,7 +40,7 @@ public class Main {
             CommandLine cmd = parser.parse(options, args);
             isCliInput = cmd.hasOption("c");
             isDetailedDisplay = cmd.hasOption("d");
-            isUsingFileCases = cmd.hasOption("f");
+            isUsingFileCases = cmd.hasOption("fio");
             isLogOutput = cmd.hasOption("o");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
             if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
@@ -51,8 +51,8 @@ public class Main {
 
         if (filePath.isEmpty())
             filePath = IO.readln("Enter input file path below.\n> ");
-        if (filePath.isEmpty()) {
-            IO.println("\u001B[31mNo input file is detected.\u001B[0m");
+        if (!filePath.endsWith(".txt") || filePath.endsWith("_io.txt")) {
+            Utils.printError("Fatal: Illegal input detected.");
             return;
         }
         if (outPath.isEmpty())
@@ -95,7 +95,9 @@ public class Main {
                 rightExprs = new ArrayList<>();
                 programLines = 0;
 
-                String codeBlock = Utils.readFile(filePath);
+                String codeBlock = Utils.readFile(filePath).replace(" ", "");
+                runHistory += "Program Loaded> " + filePath + "\n";
+                if (codeBlock.isEmpty()) return;
                 ArrayList<String> codeLines = new ArrayList<>(List.of(codeBlock.split("\n")));
                 ArrayList<String> lines = removeComment(codeLines);
 
@@ -103,8 +105,8 @@ public class Main {
                     String line = lines.get(i);
                     lineIndex = i + 1;
                     if (Utils.isIllegalProgramLine(line)) {
-                        System.err.println("Illegal statement found at line " + lineIndex);
-                        System.err.printf("%-2d %s", lineIndex, line);
+                        Utils.printError("Illegal statement found: Not having a single '='.");
+                        Utils.printfError(lineIndex, line);
                         return;
                     }
                     int splitIndex = line.indexOf('=');
@@ -114,14 +116,14 @@ public class Main {
                     rightExprs.add(rightExpr);
 
                     if (Utils.isIllegalProgramLine(leftExpr, rightExpr)) {
-                        IO.println("Line " + lineIndex + ": Illegal statement found.");
-                        System.err.printf("%-2d %s\n", lineIndex, line);
+                        Utils.printError("Illegal statement found: Unsupported statement.");
+                        Utils.printfError(lineIndex, line);
                         return;
                     }
                 }
                 programLines = leftExprs.size();
                 String codeFormatted = getCodeFormatted();
-                runHistory += "Program Loaded> " + filePath + "\n" + codeFormatted;
+                runHistory += codeFormatted;
                 if (isDetailedDisplay) IO.println(codeFormatted);
                 IO.println("Program Loaded.");
                 isToReload = false;
@@ -133,7 +135,7 @@ public class Main {
             executedLines = 0;
             runHistoryTemp = "";
 
-            String inputString, expectedResult;
+            String inputString, expectedResult = "";
             if (isUsingFileCases) {
                 try {
                     inputString = testcaseMap.get(testcaseNow * 2);
@@ -144,8 +146,7 @@ public class Main {
                     return;
                 }
             } else {
-                inputString = IO.readln("\nType input below: ");
-                expectedResult = "";
+                inputString = IO.readln("\nInput> ");
                 runHistory += "\nInput> " + inputString + "\n";
             }
 
@@ -170,6 +171,8 @@ public class Main {
             //execute the program
             IO.println();
             while (!isEnd) executeCodeLine();
+            runHistory += "Output>\t" + mainString + "\n";
+            if (isUsingFileCases) runHistory += "OutStd>\t" + expectedResult + "\n";
             runHistory += runHistoryTemp;
 
             if (isUsingFileCases) IO.println("\nTestcase " + testcaseNow + " >>>");
@@ -181,8 +184,8 @@ public class Main {
                     System.err.println("Fail at case " + testcaseNow);
                 }
             }
-            if (isDetailedDisplay) {
-                IO.print("Running log >>>\n" + runHistoryTemp.trim());
+            if (isDetailedDisplay && !runHistoryTemp.isEmpty()) {
+                IO.print("Running log >>>\n" + runHistoryTemp);
             }
         }
     }
@@ -199,9 +202,11 @@ public class Main {
         }
         String leftExpr = leftExprs.get(lineIndex);
         String rightExpr = rightExprs.get(lineIndex);
-        String regex = Utils.trimKey(leftExpr);
-        String target = Utils.trimKey(rightExpr);
-        if (mainString.contains(regex)) {
+        String regex = Utils.quote(Utils.trimKey(leftExpr)).trim();
+        String target = Utils.quote(Utils.trimKey(rightExpr)).trim();
+        String mainStringQuote = Utils.quote(mainString).trim();
+        if (regex.contains("*")) System.out.println(Arrays.toString(new String[]{regex, target, mainString}));
+        if (mainStringQuote.contains(regex)) {
             String key1 = Utils.getKey(leftExpr), key2 = Utils.getKey(rightExpr);
 
             if (key1 == null || key1.equals("once")) {
@@ -211,23 +216,24 @@ public class Main {
                 }
                 if (key1 != null) ignoredLineSet.add(lineIndex);
                 if (key2 == null) mainString = mainString.replaceFirst(regex, target);
-                else mainString = doReplace(regex, target, key2, mainString);
-            } else if (key1.equals("start") && mainString.indexOf(regex) == 0) {
+                else mainString = doReplace(regex, target, key1, key2, mainString);
+            } else if (key1.equals("start") && mainStringQuote.indexOf(regex) == 0) {
                 if (key2 == null) mainString = mainString.replaceFirst(regex, target);
                 else {
                     mainString = mainString.replaceFirst(regex, "");
-                    mainString = doReplace(regex, target, key2, mainString);
+                    mainString = doReplace(regex, target, key1, key2, mainString);
                 }
-            } else if (key1.equals("end") && mainString.lastIndexOf(regex) + regex.length() == mainString.length()) {
+            } else if (key1.equals("end") && mainStringQuote.lastIndexOf(regex) + regex.length() == mainStringQuote.length()) {
                 if (key2 == null) mainString = mainString.substring(0, mainString.length() - regex.length()) + target;
                 else {
                     mainString = mainString.substring(0, mainString.length() - regex.length());
-                    mainString = doReplace(regex, target, key2, mainString);
+                    mainString = doReplace(regex, target, key1, key2, mainString);
                 }
             } else {
                 lineIndex++;
                 return;
             }
+            mainString = Utils.unquote(mainString).trim();
             executedLines++;
             runHistoryTemp += String.format("%-2d %-2d %s=%s\t%s\n",
                     executedLines, lineIndex + 1,
@@ -255,7 +261,7 @@ public class Main {
         return codeLines;
     }
 
-    private static String doReplace(String left, String right, String key2, String mainString) {
+    private static String doReplace(String left, String right, String key1, String key2, String mainString) {
         Map<String, Function<String, String>> replaceHandlers = new HashMap<>();
 
         replaceHandlers.put("", s -> s.replaceFirst(left, right));
@@ -276,7 +282,7 @@ public class Main {
         var ref = new Object() {
             String bash = "";
         };
-        IntStream.range(0, leftExprs.size()).forEach(i -> ref.bash += String.format("%-2d %s=%s\n", i + 1, leftExprs.get(i), rightExprs.get(i)));
+        IntStream.range(0, leftExprs.size()).forEach(i -> ref.bash += Utils.unquote(String.format("%-2d %s=%s\n", i + 1, leftExprs.get(i), rightExprs.get(i))));
         return ref.bash;
     }
 
