@@ -1,0 +1,20 @@
+Program Loaded> sample_cases\code2.txt
+-  # 简单二进制乘法
+1  (start) * =
+2  (start) 0 =
+3  appendxy = (end) xy
+4  0dec = dec1
+5  1dec = 0
+6  ** = dec ** xxyy
+7  * = dec * appendxy
+8  (once) xy = ** xy
+9  triggerinc = (end)inc
+10 0 inc = 1
+11 1 inc = inc 0
+12 inc = 1
+13 xxyy xy = xy xxyy triggerinc
+14 xy =
+
+Input> 
+
+Input> 
