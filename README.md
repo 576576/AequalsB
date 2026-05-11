@@ -1,9 +1,9 @@
-# AeqB — A=B Esolang Interpreter (Java 25)
+# A=B Java interpreter
 
 [![Java](https://img.shields.io/badge/java-25-blue.svg)](https://openjdk.org/projects/jdk/25/)
 [![Maven](https://img.shields.io/badge/maven-3.9%2B-green.svg)](https://maven.apache.org)
 
-A=B 是一门极简深奥编程语言（esolang）的 Java 25 解释器。该语言只有一条指令：`A = B`，含义为「将字符串中的 A 替换为 B」。
+A=B 是一门极简深奥编程语言（esolang）的 Java解释器。该语言只有一条基本指令：`A = B`，含义为「将字符串中的 A 替换为 B」。本项目实现了其包含修饰符的拓展指令集。
 
 > **v2.0** 重构版：Maven + picocli + JUnit 5，Records 封装，管道式不可变对象。
 
@@ -67,14 +67,14 @@ java -jar target/AequalsB-2.0.0.jar -i sample_cases/code1.txt --fio -d
 ### 运行
 
 ```bash
-# 详细模式 + 文件测试用例
-java -jar target/AequalsB-2.0.0.jar -i sample_cases/code1.txt --fio -d
+# 详细模式 + 默认测试用例
+java -jar target/AequalsB-2.0.0.jar --fio -d
 
-# 交互模式
+# 交互模式 + 加载示例程序1
 java -jar target/AequalsB-2.0.0.jar -i sample_cases/code1.txt -c
 
-# 指定时间限制
-java -jar target/AequalsB-2.0.0.jar -i sample_cases/code2.txt --fio -t 200
+# 交互模式 + 指定时间限制
+java -jar target/AequalsB-2.0.0.jar -c -t 100
 ```
 
 ---
@@ -100,11 +100,11 @@ Usage: AeqB [-hV] [-c] [-d] [--fio] [-i=<file>] [-o=<output>] [-t=<time>]
 
 `sample_cases/code1.txt`：
 
-| 输入 | 输出 | 说明 |
-|------|------|------|
-| `aaabbababa` | `helloworld` | b→a 后匹配 aaaa，return 结束 |
-| `aba` | `sayonara` | b→a 后无匹配，空模式 =666 追加 |
-| `vvv` | `sayonara` | vvv= 移除，=666 追加触发 666666 |
+| 输入 | 输出            | 说明 |
+|------|---------------|------|
+| `aaabbababa` | `hello world` | b→a 后匹配 aaaa，return 结束 |
+| `aba` | `sayonara`    | b→a 后无匹配，空模式 =666 追加 |
+| `vvv` | `sayonara`    | vvv= 移除，=666 追加触发 666666 |
 
 ### 二进制乘法
 
