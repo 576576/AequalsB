@@ -13,8 +13,8 @@ class ParserTest {
     void parseSimple() throws Exception {
         var rules = Parser.parse("b=a\naaaa=(return)hello world");
         assertThat(rules).hasSize(2);
-        assertThat(rules.get(0).leftPattern()).isEqualTo("b");
-        assertThat(rules.get(0).rightReplacement()).isEqualTo("a");
+        assertThat(rules.getFirst().leftPattern()).isEqualTo("b");
+        assertThat(rules.getFirst().rightReplacement()).isEqualTo("a");
         assertThat(rules.get(0).key1()).isNull();
         assertThat(rules.get(0).key2()).isNull();
 

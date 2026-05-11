@@ -47,7 +47,6 @@ public class Main implements Callable<Integer> {
 
     // ---- runtime state ----
     private String filePath;
-    private String outPath;
     private boolean isInteractive;
     private List<String> testcaseMap = List.of();
     private final StringBuilder runHistory = new StringBuilder();
@@ -55,7 +54,7 @@ public class Main implements Callable<Integer> {
     @Override
     public Integer call() {
         filePath = file != null ? file : "";
-        outPath  = output != null ? output : "";
+        String outPath = output != null ? output : "";
         isInteractive = cli;   // only -c enters interactive mode
 
         if (filePath.isEmpty() && cli) {
@@ -162,7 +161,7 @@ public class Main implements Callable<Integer> {
             prevInputWasEmpty = false;
 
             String mainString = inputString;
-            boolean timedOut = false;
+            boolean timedOut;
             List<StepLog> steps = List.of();
 
             if (Utils.isIllegalInput(mainString)) {
@@ -204,7 +203,7 @@ public class Main implements Callable<Integer> {
     }
 
     // ---- Entry point ----
-    public static void main(String[] args) {
+    static void main(String[] args) {
         int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }

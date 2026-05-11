@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -19,7 +20,6 @@ public final class Engine {
     // ---- per-execution mutable state ----
     private final Set<Integer> ignoredLines = new HashSet<>();
     private int lineIndex;
-    private int executedLines;
     private String mainString;
     private final List<StepLog> log = new ArrayList<>();
     private boolean isEnded;
@@ -37,7 +37,7 @@ public final class Engine {
     public ExecutionResult execute(String input) {
         ignoredLines.clear();
         lineIndex = 0;
-        executedLines = 0;
+        int executedLines = 0;
         mainString = input;
         log.clear();
         isEnded = false;
@@ -73,11 +73,10 @@ public final class Engine {
             case START  -> handleStart(rule, pat, repl);
             case END    -> handleEnd(rule, pat, repl);
             case RETURN -> false;
-            case ONCE   -> false; // unreachable, handled above
+            // unreachable, handled above
+            default -> throw new IllegalStateException("Unexpected value: " + k1);
         };
     }
-
-    private static final Keyword ONCE = Keyword.ONCE;
 
     // ---- match handlers ----
 
@@ -140,6 +139,6 @@ public final class Engine {
     private static String replaceFirstLiteral(String input, String literal, String replacement) {
         return input.replaceFirst(
                 Pattern.quote(literal),
-                java.util.regex.Matcher.quoteReplacement(replacement));
+                Matcher.quoteReplacement(replacement));
     }
 }
